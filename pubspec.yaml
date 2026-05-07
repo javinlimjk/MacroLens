@@ -1,0 +1,29 @@
+name: macrolens
+description: "Privacy-first offline calorie tracker focused on Singapore food."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+  path_provider: ^2.1.2
+  device_info_plus: ^10.1.0
+  camera: ^0.10.5+9
+  uuid: ^4.5.3
+  tflite_flutter: ^0.12.1
+  image: ^4.1.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.8
+  isar_generator: ^3.1.0+1
+
+flutter:
+  uses-material-design: true
