@@ -6,6 +6,19 @@ class MockInferenceEngine implements IInferenceEngine {
   bool _isInitialized = false;
 
   @override
+  RuntimeDiagnostics? get diagnostics => _isInitialized
+      ? const RuntimeDiagnostics(
+          loadedSource: 'Mock (no model file)',
+          delegateUsed: 'None',
+          inputShape: [1, 224, 224, 3],
+          inputType: 'float32',
+          outputTensorCount: 1,
+          outputShapes: [[1, 1000]],
+          outputTypes: ['float32'],
+        )
+      : null;
+
+  @override
   Future<void> initialize() async {
     // Simulate loading model weights into memory
     await Future.delayed(const Duration(seconds: 1));

@@ -10,6 +10,10 @@ abstract class IInferenceEngine {
 
   /// Releases model resources.
   Future<void> dispose();
+
+  /// Returns structured runtime diagnostics populated after [initialize].
+  /// Null if the engine has not been initialized yet.
+  RuntimeDiagnostics? get diagnostics;
 }
 
 abstract class IMealRepository {

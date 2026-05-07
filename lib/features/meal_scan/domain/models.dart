@@ -94,3 +94,50 @@ class DailyProgress {
     required this.targetGoals,
   });
 }
+
+/// Describes how the TFLite interpreter was loaded and what tensor contract
+/// was read at runtime. Populated after [IInferenceEngine.initialize].
+class RuntimeDiagnostics {
+  /// Where the model file was sourced from.
+  final String loadedSource;
+
+  /// Which delegate was ultimately used ('GPU' or 'CPU').
+  final String delegateUsed;
+
+  /// Shape of the first input tensor, e.g. [1, 224, 224, 3].
+  final List<int> inputShape;
+
+  /// Element type of the first input tensor, e.g. 'float32'.
+  final String inputType;
+
+  /// Number of output tensors exposed by the model.
+  final int outputTensorCount;
+
+  /// Shape of each output tensor.
+  final List<List<int>> outputShapes;
+
+  /// Element type of each output tensor.
+  final List<String> outputTypes;
+
+  const RuntimeDiagnostics({
+    required this.loadedSource,
+    required this.delegateUsed,
+    required this.inputShape,
+    required this.inputType,
+    required this.outputTensorCount,
+    required this.outputShapes,
+    required this.outputTypes,
+  });
+
+  @override
+  String toString() => '''
+RuntimeDiagnostics {
+  loadedSource     : $loadedSource
+  delegateUsed     : $delegateUsed
+  inputShape       : $inputShape
+  inputType        : $inputType
+  outputTensorCount: $outputTensorCount
+  outputShapes     : $outputShapes
+  outputTypes      : $outputTypes
+}''';
+}
