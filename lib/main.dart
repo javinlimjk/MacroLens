@@ -40,6 +40,9 @@ class MacroLensApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const MainNavigationScreen(),
+      routes: {
+        '/manual-override': (context) => const ManualLogScreen(),
+      },
     );
   }
 }

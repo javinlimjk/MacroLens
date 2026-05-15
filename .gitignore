@@ -41,6 +41,11 @@ migrate_working_dir/
 /assets/models/
 /test_images/
 
+# Test artifacts
+/test/**/failures/
+/test/**/goldens/
+/test/**/.test_runtime/
+
 # Android related
 **/android/**/generated/
 **/android/app/debug/

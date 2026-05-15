@@ -1,5 +1,17 @@
 import '../features/meal_scan/domain/models.dart';
 
+class NutritionResult {
+  final NutritionInfo nutrition;
+  final bool isEstimate;
+  final String decisionPath;
+
+  NutritionResult({
+    required this.nutrition,
+    required this.isEstimate,
+    required this.decisionPath,
+  });
+}
+
 class NutritionRulesEngine {
   /// Maps a model prediction (e.g., 'chicken_rice') to its base nutrition values.
   /// Values are estimates for a standard portion.
@@ -69,25 +81,53 @@ class NutritionRulesEngine {
     // For MVP phase 2, we implement the lookup logic over this extensible map.
   };
 
-  /// Computes the final nutritional value given a dish and applied modifiers.
-  NutritionInfo calculateMacros(String dishId, List<String> appliedModifiers, PortionSize portionSize) {
-    final base = _database[dishId];
-    if (base == null) {
-      // Fallback for unknown dishes (could return 0 or a generic average)
-      return NutritionInfo(calories: 0, protein: 0, carbs: 0, fats: 0);
-    }
+  static const double HIGH_THRESHOLD = 0.75;
+  static const double LOW_THRESHOLD = 0.40;
 
-    NutritionInfo total = base.defaultPortion;
+  /// Computes the final nutritional value given the LLM output.
+  NutritionResult calculateMacros({
+    required LLMInferenceOutput output,
+    required PortionSize portionSize,
+  }) {
+    NutritionInfo total;
+    bool isEstimate = false;
+    String decisionPath = '';
 
-    // Apply modifiers
-    for (final modifier in appliedModifiers) {
-      final impact = base.modifierImpacts[modifier];
-      if (impact != null) {
-        total = total.add(impact);
+    final base = _database[output.dishId];
+    
+    if (output.dishId != 'unknown' && output.confidence >= HIGH_THRESHOLD && base != null) {
+      // Dish-level exact mapping
+      decisionPath = 'dish_level_exact';
+      total = _applyDishModifiers(base, output.modifiers);
+    } else if (output.dishId != 'unknown' && output.confidence >= LOW_THRESHOLD && base != null) {
+      // Dish-level mapping but estimated due to lower confidence
+      decisionPath = 'dish_level_estimate';
+      isEstimate = true;
+      total = _applyDishModifiers(base, output.modifiers);
+    } else {
+      // Category/unknown fallback
+      decisionPath = 'category_level_estimate';
+      isEstimate = true;
+      
+      final categoryAvg = _getAverageForCategory(output.category);
+      
+      // Safety rule: avoid gross underestimates by respecting the LLM's estimatedKcal if it's higher
+      int safeKcal = categoryAvg.calories;
+      if (output.estimatedKcal > safeKcal) {
+        safeKcal = output.estimatedKcal;
       }
+      
+      double ratio = safeKcal / categoryAvg.calories;
+      total = NutritionInfo(
+        calories: safeKcal,
+        protein: categoryAvg.protein * ratio,
+        carbs: categoryAvg.carbs * ratio,
+        fats: categoryAvg.fats * ratio,
+      );
     }
 
-    // Apply portion scaling
+    // Apply portion scaling calibrated to HPB-style ranges
+    // Regular = 1.0, Small ≈ 0.75, Large ≈ 1.35
     double scale = 1.0;
     if (portionSize == PortionSize.small) scale = 0.75;
     if (portionSize == PortionSize.large) scale = 1.35;
@@ -101,7 +141,64 @@ class NutritionRulesEngine {
       );
     }
 
+    return NutritionResult(
+      nutrition: total,
+      isEstimate: isEstimate,
+      decisionPath: decisionPath,
+    );
+  }
+
+  NutritionInfo calculateManualMacros({
+    required String dishId,
+    required List<String> appliedModifiers,
+    required PortionSize portionSize,
+  }) {
+    final base = _database[dishId];
+    if (base == null) {
+      return _getAverageForCategory(MealCategory.unknown);
+    }
+    
+    NutritionInfo total = _applyDishModifiers(base, appliedModifiers);
+
+    double scale = 1.0;
+    if (portionSize == PortionSize.small) scale = 0.75;
+    if (portionSize == PortionSize.large) scale = 1.35;
+
+    if (scale != 1.0) {
+      total = NutritionInfo(
+        calories: (total.calories * scale).round(),
+        protein: (total.protein * scale),
+        carbs: (total.carbs * scale),
+        fats: (total.fats * scale),
+      );
+    }
     return total;
+  }
+
+  NutritionInfo _applyDishModifiers(DishBaseNutrition base, List<String> modifiers) {
+    NutritionInfo total = base.defaultPortion;
+    for (final modifier in modifiers) {
+      final impact = base.modifierImpacts[modifier];
+      if (impact != null) {
+        total = total.add(impact);
+      }
+    }
+    return total;
+  }
+
+  NutritionInfo _getAverageForCategory(MealCategory category) {
+    switch (category) {
+      case MealCategory.riceBase:
+        return NutritionInfo(calories: 550, protein: 15, carbs: 75, fats: 20);
+      case MealCategory.noodleBase:
+        return NutritionInfo(calories: 500, protein: 12, carbs: 70, fats: 18);
+      case MealCategory.snackSide:
+        return NutritionInfo(calories: 250, protein: 5, carbs: 30, fats: 12);
+      case MealCategory.drink:
+        return NutritionInfo(calories: 120, protein: 1, carbs: 22, fats: 2);
+      case MealCategory.unknown:
+        return NutritionInfo(calories: 400, protein: 10, carbs: 50, fats: 15); // Broad average
+    }
   }
 
   /// Exposes available dishes for manual search fallback.
