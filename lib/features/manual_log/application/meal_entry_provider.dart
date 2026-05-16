@@ -60,10 +60,10 @@ class MealEntryNotifier extends AutoDisposeFamilyNotifier<MealEntryState, DishBa
 
   void _recalculate() {
     final engine = ref.read(nutritionEngineProvider);
-    final calculated = engine.calculateMacros(
-      state.baseDish.dishId,
-      state.activeModifiers.toList(),
-      state.portionSize,
+    final calculated = engine.calculateManualMacros(
+      dishId: state.baseDish.dishId,
+      appliedModifiers: state.activeModifiers.toList(),
+      portionSize: state.portionSize,
     );
     state = state.copyWith(currentNutrition: calculated);
   }

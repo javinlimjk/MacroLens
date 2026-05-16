@@ -1,12 +1,12 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 
 import '../../database/meal_repository_impl.dart';
 import '../../features/meal_scan/domain/interfaces.dart';
-import '../../features/meal_scan/infrastructure/mock_inference_engine.dart';
-import '../../features/meal_scan/infrastructure/gemma_inference_engine.dart';
+import '../../features/meal_scan/infrastructure/gemma_native_engine.dart';
+import '../../features/meal_scan/infrastructure/mock_multimodal_engine.dart';
 import '../../nutrition_data/nutrition_rules_engine.dart';
-import '../hardware/device_capability_service.dart';
 
 /// Provider for the Isar instance. Must be overridden in ProviderScope at app startup.
 final isarProvider = Provider<Isar>((ref) {
@@ -33,7 +33,7 @@ enum InferenceRuntime {
 /// Provider for App Configuration (e.g., Debug toggles)
 class AppConfig {
   final InferenceRuntime selectedRuntime;
-  const AppConfig({this.selectedRuntime = InferenceRuntime.mock});
+  const AppConfig({this.selectedRuntime = InferenceRuntime.gemma});
   
   AppConfig copyWith({InferenceRuntime? selectedRuntime}) {
     return AppConfig(selectedRuntime: selectedRuntime ?? this.selectedRuntime);
@@ -53,16 +53,21 @@ final appConfigProvider = NotifierProvider<AppConfigNotifier, AppConfig>(() {
   return AppConfigNotifier();
 });
 
-/// Provider for the Inference Engine (Mock or Gemma depending on config)
-final inferenceEngineProvider = Provider<IInferenceEngine>((ref) {
+
+/// Provider for the Multimodal Engine (Mock or Gemma depending on config)
+final multimodalEngineProvider = Provider<IMultimodalInferenceEngine>((ref) {
   final config = ref.watch(appConfigProvider);
   
-  switch (config.selectedRuntime) {
-    case InferenceRuntime.gemma:
-      final capabilityService = DeviceCapabilityService();
-      return GemmaInferenceEngine(capabilityService);
-    case InferenceRuntime.mock:
-    default:
-      return MockInferenceEngine();
+  // Windows development fallback
+  if (Platform.isWindows) {
+    return MockMultimodalEngine();
   }
+
+  // Force Gemma 4 as the primary testing path on Android/iOS
+  if (config.selectedRuntime == InferenceRuntime.gemma) {
+    return GemmaNativeEngine();
+  }
+
+  // Explicit Mock mode for developers
+  return MockMultimodalEngine();
 });

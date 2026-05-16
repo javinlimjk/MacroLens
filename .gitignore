@@ -18,10 +18,8 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code related
+.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -33,13 +31,54 @@ migrate_working_dir/
 /build/
 /coverage/
 
-# Symbolication related
-app.*.symbols
+# AI Models and Large Assets
+# These are often >100MB and should be managed via Git LFS or external storage
+*.task
+*.litertlm
+*.tflite
+*.bin
+*.onnx
+/assets/models/
+/test_images/
 
-# Obfuscation related
+# Test artifacts
+/test/**/failures/
+/test/**/goldens/
+/test/**/.test_runtime/
+
+# Android related
+**/android/**/generated/
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+android/local.properties
+android/key.properties
+*.keystore
+*.jks
+
+# iOS related
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Runner/GeneratedPluginRegistrant.h
+**/ios/Runner/GeneratedPluginRegistrant.m
+**/ios/Runner/GeneratedPluginRegistrant.swift
+**/ios/.generated/
+*.mode1v3
+*.mode2v3
+*.normal
+*.perspectivev3
+**/Podfile.lock
+**/Pods/
+**/ServiceDefinitions.json
+**/Runner/GoogleService-Info.plist
+
+# Web related
+lib/generated_plugin_registrant.dart
+
+# Symbolication and Obfuscation
+app.*.symbols
 app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Environment variables
+.env
+.env.*
